@@ -168,11 +168,10 @@ do {
 
 #### Traverse AST Nodes
 
-We provide a pre-order depth-first traversal implementation on all AST nodes.
-In order to use this, simply write your visitor by conforming `ASTVisitor`
-protocol with the `visit` methods for the AST nodes that are interested to you.
-You can also write your own traversal implementations
-to override the default behaviors.
+We provide both a pre-order and post-order depth-first traversal implementation on all 
+AST nodes. In order to use this, simply write your visitor by conforming `ASTVisitor`
+protocol with the `visit` and `endVisit` methods for the AST nodes that are interested to you.
+You can also write your own traversal implementations to override the default behaviors.
 
 Returning `false` from `traverse` and `visit` methods will stop the traverse.
 
@@ -182,6 +181,12 @@ class MyVisitor : ASTVisitor {
     // visit this if statement
 
     return true
+  }
+  
+  func endVisit(_ ifStmt: IfStatement) throws -> Bool {
+	// called after visiting the sub-nodes of the if statement
+	
+	return true
   }
 }
 let myVisitor = MyVisitor()

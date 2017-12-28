@@ -80,8 +80,8 @@ extension ASTVisitor {
         guard try traverse(stmt) else { return false }
       }
     }
-
-    return true
+	
+	return try endVisit(decl) 
   }
 
   public func traverse(_ decl: ConstantDeclaration) throws -> Bool {
@@ -92,14 +92,16 @@ extension ASTVisitor {
         guard try traverse(expr) else { return false }
       }
     }
-
-    return true
+	
+	return try endVisit(decl) 
   }
 
   public func traverse(_ decl: DeinitializerDeclaration) throws -> Bool {
     guard try visit(decl) else { return false }
 
-    return try traverse(decl.body)
+    guard try traverse(decl.body) else { return false }
+	
+	return try endVisit(decl) 
   }
 
   public func traverse(_ decl: EnumDeclaration) throws -> Bool {
@@ -115,8 +117,8 @@ extension ASTVisitor {
         continue // we don't traverse `union` and `rawValue` cases for now
       }
     }
-
-    return true
+	
+	return try endVisit(decl) 
   }
 
   public func traverse(_ decl: ExtensionDeclaration) throws -> Bool {
@@ -130,8 +132,8 @@ extension ASTVisitor {
         guard try traverse(stmt) else { return false }
       }
     }
-
-    return true
+	
+	return try endVisit(decl)
   }
 
   public func traverse(_ decl: FunctionDeclaration) throws -> Bool {
@@ -146,12 +148,13 @@ extension ASTVisitor {
     if let body = decl.body {
       guard try traverse(body) else { return false }
     }
-
-    return true
+	
+	return try endVisit(decl) 
   }
 
   public func traverse(_ decl: ImportDeclaration) throws -> Bool {
-    return try visit(decl)
+    guard try visit(decl) else { return false }
+	return try endVisit(decl);
   }
 
   public func traverse(_ decl: InitializerDeclaration) throws -> Bool {
@@ -163,15 +166,21 @@ extension ASTVisitor {
       }
     }
 
-    return try traverse(decl.body)
+    guard try traverse(decl.body) else { return false }
+	
+	return try endVisit(decl) 
   }
 
   public func traverse(_ decl: OperatorDeclaration) throws -> Bool {
-    return try visit(decl)
+    guard try visit(decl) else { return false }
+	
+	return try endVisit(decl)
   }
 
   public func traverse(_ decl: PrecedenceGroupDeclaration) throws -> Bool {
-    return try visit(decl)
+    guard try visit(decl) else { return false }
+	
+	return try endVisit(decl)
   }
 
   public func traverse(_ decl: ProtocolDeclaration) throws -> Bool { /*
@@ -206,7 +215,7 @@ extension ASTVisitor {
       }
     }
 
-    return true
+    return try endVisit(decl)
   }
 
   public func traverse(_ decl: StructDeclaration) throws -> Bool {
@@ -221,10 +230,11 @@ extension ASTVisitor {
       }
     }
 
-    return true
+    return try endVisit(decl)
   }
 
   public func traverse(_ decl: SubscriptDeclaration) throws -> Bool {
+
     guard try visit(decl) else { return false }
 
     for param in decl.parameterList {
@@ -235,21 +245,22 @@ extension ASTVisitor {
 
     switch decl.body {
     case .codeBlock(let codeBlock):
-      return try traverse(codeBlock)
+      guard try traverse(codeBlock) else { return false }
     case .getterSetterBlock(let block):
       guard try traverse(block.getter.codeBlock) else { return false }
       if let setterBlock = block.setter?.codeBlock {
         guard try traverse(setterBlock) else { return false }
       }
     default:
-      return true
+      ()
     }
 
-    return true
+    return try endVisit(decl)
   }
 
   public func traverse(_ decl: TypealiasDeclaration) throws -> Bool {
-    return try visit(decl)
+    guard try visit(decl) else { return false }
+	return try endVisit(decl)
   }
 
   public func traverse(_ decl: VariableDeclaration) throws -> Bool { /*
@@ -265,7 +276,7 @@ extension ASTVisitor {
         }
       }
     case .codeBlock(_, _, let codeBlock):
-      return try traverse(codeBlock)
+      guard try traverse(codeBlock) else { return false }
     case .getterSetterBlock(_, _, let block):
       guard try traverse(block.getter.codeBlock) else { return false }
       if let setterBlock = block.setter?.codeBlock {
@@ -280,10 +291,10 @@ extension ASTVisitor {
         guard try traverse(didSetBlock) else { return false }
       }
     default:
-      return true
+      ()
     }
 
-    return true
+    return try endVisit(decl)
   }
 
   // Statements
@@ -335,24 +346,30 @@ extension ASTVisitor {
     for stmt in statements {
       guard try traverse(stmt) else { return false }
     }
-    return true
+
+	return true
   }
 
   public func traverse(_ stmt: BreakStatement) throws -> Bool {
-    return try visit(stmt)
+    guard try visit(stmt) else { return false }
+	return try endVisit(stmt)
   }
 
   public func traverse(_ stmt: CompilerControlStatement) throws -> Bool {
-    return try visit(stmt)
+    guard try visit(stmt) else { return false }
+	return try endVisit(stmt)
+	
   }
 
   public func traverse(_ stmt: ContinueStatement) throws -> Bool {
-    return try visit(stmt)
+    guard try visit(stmt) else { return false }
+	return try endVisit(stmt)
   }
 
   public func traverse(_ stmt: DeferStatement) throws -> Bool {
     guard try visit(stmt) else { return false }
-    return try traverse(stmt.codeBlock)
+    guard try traverse(stmt.codeBlock) else { return false }
+	return try endVisit(stmt)
   }
 
   public func traverse(_ stmt: DoStatement) throws -> Bool {
@@ -366,11 +383,12 @@ extension ASTVisitor {
       guard try traverse(catchBlock.codeBlock) else { return false }
     }
 
-    return true
+    return try endVisit(stmt)
   }
 
   public func traverse(_ stmt: FallthroughStatement) throws -> Bool {
-    return try visit(stmt)
+    guard try visit(stmt) else { return false }
+	return try endVisit(stmt)
   }
 
   public func traverse(_ stmt: ForInStatement) throws -> Bool {
@@ -380,7 +398,9 @@ extension ASTVisitor {
     if let expr = stmt.item.whereClause {
       guard try traverse(expr) else { return false }
     }
-    return try traverse(stmt.codeBlock)
+    guard try traverse(stmt.codeBlock) else { return false }
+	
+	return try endVisit(stmt)
   }
 
   private func traverse(_ condition: Condition) throws -> Bool {
@@ -410,7 +430,9 @@ extension ASTVisitor {
     guard try visit(stmt) else { return false }
 
     guard try traverse(stmt.conditionList) else { return false }
-    return try traverse(stmt.codeBlock)
+    guard try traverse(stmt.codeBlock) else { return false}
+	
+	return try endVisit(stmt)
   }
 
   public func traverse(_ stmt: IfStatement) throws -> Bool {
@@ -421,23 +443,27 @@ extension ASTVisitor {
     if let elseClause = stmt.elseClause {
       switch elseClause {
       case .else(let codeBlock):
-        return try traverse(codeBlock)
+        guard try traverse(codeBlock) else { return false}
       case .elseif(let ifStmt):
-        return try traverse(ifStmt)
+        guard try traverse(ifStmt) else { return false}
       }
     }
-    return true
+    return try endVisit(stmt)
   }
 
   public func traverse(_ stmt: LabeledStatement) throws -> Bool {
     guard try visit(stmt) else { return false }
-    return try traverse(stmt.statement)
+    guard try traverse(stmt.statement) else { return false }
+	
+	return try endVisit(stmt)
   }
 
   public func traverse(_ stmt: RepeatWhileStatement) throws -> Bool {
     guard try visit(stmt) else { return false }
     guard try traverse(stmt.codeBlock) else { return false }
-    return try traverse(stmt.conditionExpression)
+    guard try traverse(stmt.conditionExpression) else { return false }
+	
+	return try endVisit(stmt)
   }
 
   public func traverse(_ stmt: ReturnStatement) throws -> Bool {
@@ -445,7 +471,7 @@ extension ASTVisitor {
     if let expr = stmt.expression {
       guard try traverse(expr) else { return false }
     }
-    return true
+    return try endVisit(stmt)
   }
 
   public func traverse(_ stmt: SwitchStatement) throws -> Bool {
@@ -465,18 +491,22 @@ extension ASTVisitor {
       }
     }
 
-    return true
+    return try endVisit(stmt)
   }
 
   public func traverse(_ stmt: ThrowStatement) throws -> Bool {
     guard try visit(stmt) else { return false }
-    return try traverse(stmt.expression)
+    guard try traverse(stmt.expression) else { return false }
+	
+	return try endVisit(stmt)
   }
 
   public func traverse(_ stmt: WhileStatement) throws -> Bool {
     guard try visit(stmt) else { return false }
     guard try traverse(stmt.conditionList) else { return false }
-    return try traverse(stmt.codeBlock)
+    guard try traverse(stmt.codeBlock) else { return false }
+	
+	return try endVisit(stmt)
   }
 
   // Expressions
@@ -555,13 +585,17 @@ extension ASTVisitor {
   public func traverse(_ expr: AssignmentOperatorExpression) throws -> Bool {
     guard try visit(expr) else { return false }
     guard try traverse(expr.leftExpression) else { return false }
-    return try traverse(expr.rightExpression)
+    guard try traverse(expr.rightExpression) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: BinaryOperatorExpression) throws -> Bool {
     guard try visit(expr) else { return false }
     guard try traverse(expr.leftExpression) else { return false }
-    return try traverse(expr.rightExpression)
+    guard try traverse(expr.rightExpression) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: ClosureExpression) throws -> Bool {
@@ -576,7 +610,7 @@ extension ASTVisitor {
       guard try traverse(stmts) else { return false }
     }
 
-    return true
+    return try endVisit(expr)
   }
 
   public func traverse(_ expr: ExplicitMemberExpression) throws -> Bool {
@@ -584,19 +618,23 @@ extension ASTVisitor {
 
     switch expr.kind {
     case .tuple(let postfixExpr, _):
-      return try traverse(postfixExpr)
+      guard try traverse(postfixExpr) else { return false }
     case .namedType(let postfixExpr, _):
-      return try traverse(postfixExpr)
+      guard try traverse(postfixExpr) else { return false }
     case .generic(let postfixExpr, _, _):
-      return try traverse(postfixExpr)
+      guard try traverse(postfixExpr) else { return false }
     case .argument(let postfixExpr, _, _):
-      return try traverse(postfixExpr)
+      guard try traverse(postfixExpr) else { return false }
     }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: ForcedValueExpression) throws -> Bool {
     guard try visit(expr) else { return false }
-    return try traverse(expr.postfixExpression)
+    guard try traverse(expr.postfixExpression) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: FunctionCallExpression) throws -> Bool {
@@ -619,33 +657,44 @@ extension ASTVisitor {
         }
       }
     }
+	
     if let closureExpr = expr.trailingClosure {
       guard try traverse(closureExpr) else { return false }
     }
 
-    return true
+    return try endVisit(expr)
   }
 
   public func traverse(_ expr: IdentifierExpression) throws -> Bool {
-    return try visit(expr)
+    guard try visit(expr) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: ImplicitMemberExpression) throws -> Bool {
-    return try visit(expr)
+    guard try visit(expr) else  { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: InOutExpression) throws -> Bool {
-    return try visit(expr)
+    guard try visit(expr) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: InitializerExpression) throws -> Bool {
     guard try visit(expr) else { return false }
-    return try traverse(expr.postfixExpression)
+    guard try traverse(expr.postfixExpression) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: KeyPathStringExpression) throws -> Bool {
     guard try visit(expr) else { return false }
-    return try traverse(expr.expression)
+    guard try traverse(expr.expression) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: LiteralExpression) throws -> Bool {
@@ -653,43 +702,54 @@ extension ASTVisitor {
 
     switch expr.kind {
     case .interpolatedString(let exprs, _):
-      return try traverse(exprs)
+      guard try traverse(exprs) else { return false }
     case .array(let exprs):
-      return try traverse(exprs)
+      guard try traverse(exprs) else { return false }
     case .dictionary(let dictEntries):
       for entry in dictEntries {
         guard try traverse(entry.key) else { return false }
         guard try traverse(entry.value) else { return false }
       }
-      return true
-    default:
-      return true
+	default:
+		()
     }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: OptionalChainingExpression) throws -> Bool {
     guard try visit(expr) else { return false }
-    return try traverse(expr.postfixExpression)
+    guard try traverse(expr.postfixExpression) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: ParenthesizedExpression) throws -> Bool {
     guard try visit(expr) else { return false }
-    return try traverse(expr.expression)
+    guard try traverse(expr.expression) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: PostfixOperatorExpression) throws -> Bool {
     guard try visit(expr) else { return false }
-    return try traverse(expr.postfixExpression)
+    guard try traverse(expr.postfixExpression) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: PostfixSelfExpression) throws -> Bool {
     guard try visit(expr) else { return false }
-    return try traverse(expr.postfixExpression)
+    guard try traverse(expr.postfixExpression) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: PrefixOperatorExpression) throws -> Bool {
     guard try visit(expr) else { return false }
-    return try traverse(expr.postfixExpression)
+    guard try traverse(expr.postfixExpression) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: SelectorExpression) throws -> Bool {
@@ -732,7 +792,7 @@ extension ASTVisitor {
       }
     }
 
-    return true
+    return try endVisit(expr)
   }
 
   public func traverse(_ expr: SubscriptExpression) throws -> Bool {
@@ -741,7 +801,9 @@ extension ASTVisitor {
     guard try traverse(expr.postfixExpression) else { return false }
 
     let argumentExprs = expr.arguments.map({ $0.expression })
-    return try traverse(argumentExprs)
+    guard try traverse(argumentExprs) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: SuperclassExpression) throws -> Bool {
@@ -749,10 +811,10 @@ extension ASTVisitor {
 
     if case .subscript(let arguments) = expr.kind {
       let exprs = arguments.map({ $0.expression })
-      return try traverse(exprs)
+      guard try traverse(exprs) else { return false }
     }
 
-    return true
+    return try endVisit(expr)
   }
 
   public func traverse(_ expr: TernaryConditionalOperatorExpression) throws -> Bool {
@@ -760,7 +822,9 @@ extension ASTVisitor {
 
     guard try traverse(expr.conditionExpression) else { return false }
     guard try traverse(expr.trueExpression) else { return false }
-    return try traverse(expr.falseExpression)
+    guard try traverse(expr.falseExpression) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: TryOperatorExpression) throws -> Bool {
@@ -768,19 +832,23 @@ extension ASTVisitor {
 
     switch expr.kind {
     case .try(let expression):
-      return try traverse(expression)
+      guard try traverse(expression) else { return false }
     case .forced(let expression):
-      return try traverse(expression)
+      guard try traverse(expression) else { return false }
     case .optional(let expression):
-      return try traverse(expression)
+      guard try traverse(expression) else { return false }
     }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: TupleExpression) throws -> Bool {
     guard try visit(expr) else { return false }
 
     let exprs = expr.elementList.map({ $0.expression })
-    return try traverse(exprs)
+    guard try traverse(exprs) else { return false }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: TypeCastingOperatorExpression) throws -> Bool {
@@ -788,17 +856,21 @@ extension ASTVisitor {
 
     switch expr.kind {
     case .check(let expression, _):
-      return try traverse(expression)
+      guard try traverse(expression) else { return false }
     case .cast(let expression, _):
-      return try traverse(expression)
+      guard try traverse(expression) else { return false }
     case .conditionalCast(let expression, _):
-      return try traverse(expression)
+      guard try traverse(expression) else { return false }
     case .forcedCast(let expression, _):
-      return try traverse(expression)
+      guard try traverse(expression) else { return false }
     }
+	
+	return try endVisit(expr)
   }
 
   public func traverse(_ expr: WildcardExpression) throws -> Bool {
-    return try visit(expr)
+    guard try visit(expr) else { return false }
+	
+	return try endVisit(expr)
   }
 }
